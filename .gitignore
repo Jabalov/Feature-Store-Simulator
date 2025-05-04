@@ -1,0 +1,45 @@
+# Byte-compiled / cache / logs
+__pycache__/
+*.py[cod]
+*.log
+
+# Docker files
+docker\postgres_data\*
+venv
+.venv\*
+ENV\
+env\
+.ipynb_checkpoints\
+
+# VS Code or PyCharm project files
+.vscode/
+.idea/
+
+# Mac/Unix system files
+.DS_Store
+
+# Spark checkpoints (if any)
+.checkpoint/
+
+# Parquet, processed data
+*.parquet
+data/processed/
+data/intermediate/
+
+# Local environment/config files
+.env
+*.yaml
+
+# Docker / Build artifacts
+*.pid
+*.db
+*.sock
+
+# Airflow or scheduler logs
+logs/
+
+# Redis dump file
+dump.rdb
+
+# Optional: ignore the GitHub Actions configs if they’re experimental
+.github/
