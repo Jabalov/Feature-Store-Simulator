@@ -1,12 +1,15 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, when, lit
+from pyspark.sql.functions import current_timestamp
+
 import os
 from datetime import datetime
 from tracker.db import get_db_conn
 from tracker.logger import log_materialization, update_last_updated
 import time
 
-
+def add_timestamp(df):
+    return df.withColumn("timestamp", current_timestamp())
 
 spark = SparkSession.builder \
     .appName("TelcoFeatureEngineering") \
@@ -15,15 +18,31 @@ spark = SparkSession.builder \
 
 df = spark.read.csv("data/raw/Telco-Customer-Churn.csv", header=True, inferSchema=True)
 
-df = df.withColumn("TotalCharges", when(col("TotalCharges") == " ", None).otherwise(col("TotalCharges").cast("float")))
-tenure_df = df.select(col("customerID").alias("entity_id"), col("tenure").alias("tenure_months"))
-
-fiber_df = df.select(
-    col("customerID").alias("entity_id"),
-    when(col("InternetService") == "Fiber optic", lit(1)).otherwise(lit(0)).alias("has_fiber_optic")
+df = df.withColumn(
+    "TotalCharges",
+    when(col("TotalCharges") == " ", None).otherwise(col("TotalCharges").cast("float"))
 )
 
-monthly_df = df.select(col("customerID").alias("entity_id"), col("MonthlyCharges").alias("monthly_charges"))
+tenure_df = add_timestamp(
+    df.select(
+        col("customerID").alias("entity_id"),
+        col("tenure").alias("tenure_months")
+    )
+)
+
+fiber_df = add_timestamp(
+    df.select(
+        col("customerID").alias("entity_id"),
+        when(col("InternetService") == "Fiber optic", lit(1)).otherwise(lit(0)).alias("has_fiber_optic")
+    )
+)
+
+monthly_df = add_timestamp(
+    df.select(
+        col("customerID").alias("entity_id"),
+        col("MonthlyCharges").alias("monthly_charges")
+    )
+)
 
 output_base = "data/processed/offline_store/telco"
 today = datetime.today().strftime("%Y-%m-%d")

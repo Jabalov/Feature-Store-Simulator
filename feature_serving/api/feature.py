@@ -10,6 +10,12 @@ from feature_retrieval.offline import get_offline_features
 from feature_retrieval.online import get_online_features
 from tracker.logger import log_retrieval
 from feature_sync.sync_to_redis import sync_all_features
+from fastapi.responses import Response
+from feature_retrieval.config import OFFLINE_STORE_BASE
+from feature_sync.sync_to_redis import sync_all_features
+
+import os
+from datetime import datetime
 
 
 router = APIRouter(prefix="/features")
@@ -64,6 +70,57 @@ def get_online(entity_id: str, features: list[str] = Query(...)):
         "features": result,
         "freshness_seconds": freshness
     }
+
+@router.post("/sync")
+def sync_features_to_redis(date: str = None):
+    sync_date = date or datetime.today().strftime("%Y-%m-%d")
+    sync_all_features(sync_date)
+    return {
+        "message": f"Features synced to Redis for date {sync_date}",
+        "status": "success"
+    }
+
+@router.get("/metrics")
+def metrics():
+    import prometheus_client
+    from prometheus_client import Gauge
+
+    freshness_gauge = Gauge("feature_freshness_seconds", "Freshness by feature", ["entity_id", "feature_name"])
+    now = datetime.utcnow()
+
+    keys = redis_client.keys("*:*:timestamp")
+    for ts_key in keys:
+        entity_id, feature = ts_key.split(":")[:2]
+        ts_value = redis_client.get(ts_key)
+        if ts_value:
+            freshness = (now - datetime.fromisoformat(ts_value)).total_seconds()
+            freshness_gauge.labels(entity_id=entity_id, feature_name=feature).set(freshness)
+
+    return Response(prometheus_client.generate_latest(), media_type=prometheus_client.CONTENT_TYPE_LATEST)
+
+
+@router.get("/metrics/offline")
+def offline_freshness():
+    base_path = OFFLINE_STORE_BASE
+    features = os.listdir(base_path)
+    freshness = {}
+
+    for f in features:
+        feature_path = os.path.join(base_path, f)
+        if not os.path.isdir(feature_path): continue
+
+        dates = [
+            d for d in os.listdir(feature_path)
+            if d.startswith("date=")
+        ]
+        if not dates: continue
+
+        last_date = max(dates).split("=")[1]
+        last_dt = datetime.strptime(last_date, "%Y-%m-%d")
+        freshness[f] = (datetime.utcnow() - last_dt).total_seconds()
+
+    return freshness
+
 
 @router.post("/sync")
 def sync_features_to_redis(date: str = None):

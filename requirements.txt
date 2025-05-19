@@ -21,3 +21,5 @@ httpx[http2]
 httpx[http2,cli]
 httpx[http2,cli,keepalive]
 flake8
+prometheus-client
+click
