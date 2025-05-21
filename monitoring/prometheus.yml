@@ -1,0 +1,20 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'feature_api'
+    static_configs:
+      - targets: ['feature_api:8000']
+  - job_name: 'feature_api_redis'
+    static_configs:
+      - targets: ['feature_api_redis:6379'] 
+  - job_name: 'feature_api_postgres'
+    static_configs:
+      - targets: ['feature_api_postgres:5432']
+  - job_name: 'feature_api_rabbitmq'
+    static_configs:
+      - targets: ['feature_api_rabbitmq:5672']
+  - job_name: 'feature_api_celery'
+    static_configs:
+      - targets: ['feature_api_celery:5555']
+  - job_name: 'feature_api_flower'
