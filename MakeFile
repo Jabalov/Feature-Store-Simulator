@@ -1,0 +1,22 @@
+# Environment setup
+up:
+	docker-compose -f infrastructure/docker-compose.yml up -d
+
+up-monitoring:
+	docker-compose -f infrastructure/docker-compose.monitoring.yml up -d
+
+down:
+	docker-compose -f infrastructure/docker-compose.yml down
+	docker-compose -f infrastructure/docker-compose.monitoring.yml down
+
+test:
+	pytest --cov=.
+
+sync:
+	python feature_sync/sync_to_redis.py --date $$(date +%Y-%m-%d)
+
+cli:
+	python cli/sync_cli.py --date $$(date +%Y-%m-%d)
+
+serve:
+	cd feature_serving && uvicorn main:app --reload
