@@ -14,12 +14,15 @@ from fastapi.responses import Response
 from feature_retrieval.config import OFFLINE_STORE_BASE
 from feature_sync.sync_to_redis import sync_all_features
 from feature_retrieval.config import redis_client
+import prometheus_client
+from prometheus_client import Gauge
 
 import os
 from datetime import datetime
 
 
 router = APIRouter(prefix="/features")
+freshness_gauge = Gauge("feature_freshness_seconds", "Freshness by feature", ["entity_id", "feature_name"])
 
 def get_db():
     db = SessionLocal()
@@ -38,12 +41,7 @@ def create_feature(f: schemas.FeatureCreate, db: Session = Depends(get_db)):
 
 @router.get("/metrics")
 def metrics():
-    import prometheus_client
-    from prometheus_client import Gauge
-
-    freshness_gauge = Gauge("feature_freshness_seconds", "Freshness by feature", ["entity_id", "feature_name"])
     now = datetime.utcnow()
-
     keys = redis_client.keys("*:*:timestamp")
     for ts_key in keys:
         entity_id, feature = ts_key.split(":")[:2]

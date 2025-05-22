@@ -28,7 +28,7 @@ data/intermediate/
 
 # Local environment/config files
 .env
-*.yaml
+# *.yaml
 
 # Docker / Build artifacts
 *.pid

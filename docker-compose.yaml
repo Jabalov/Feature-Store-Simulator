@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: feature_registry_db
+    environment:
+      POSTGRES_USER: feature_user
+      POSTGRES_PASSWORD: feature_pass
+      POSTGRES_DB: feature_store
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/postgres/init_materialization_log.sql:/docker-entrypoint-initdb.d/init_materialization_log.sql
+      - ./docker/postgres/init_retrieval_log.sql:/docker-entrypoint-initdb.d/init_retrieval_log.sql
+
+  redis:
+    image: redis:7
+    container_name: feature_online_store
+    ports:
+      - "6379:6379"
+
+  spark:
+    image: bitnami/spark:latest
+    container_name: spark_engine
+    environment:
+      - SPARK_MODE=master
+    ports:
+      - "8080:8080"
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: feature_serving/Dockerfile
+    container_name: feature_api
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "8000:8000"
+
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana:/var/lib/grafana
