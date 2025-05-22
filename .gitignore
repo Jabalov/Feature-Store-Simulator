@@ -51,5 +51,3 @@ __pycache__/
 *.parquet
 *.zip
 logs/
-
-*/config.*
