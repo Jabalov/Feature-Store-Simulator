@@ -1,0 +1,9 @@
+input_csv: data/raw/example_dataset.csv
+
+features:
+  - name: numeric_age
+    transformation: "CAST(age AS INT)"
+  - name: income_k
+    transformation: "CAST(income / 1000 AS FLOAT)"
+  - name: is_premium
+    transformation: "CASE WHEN plan_type = 'premium' THEN 1 ELSE 0 END"

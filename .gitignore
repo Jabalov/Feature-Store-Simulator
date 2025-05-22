@@ -43,3 +43,13 @@ dump.rdb
 
 # Optional: ignore the GitHub Actions configs if they’re experimental
 .github/
+
+venv/
+__pycache__/
+*.pyc
+.env
+*.parquet
+*.zip
+logs/
+
+*/config.*

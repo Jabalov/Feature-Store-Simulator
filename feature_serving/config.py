@@ -1,8 +1,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
+from dotenv import load_dotenv
 
-DB_URL = os.getenv("DATABASE_URL", "postgresql://feature_user:feature_pass@localhost:5432/feature_store")
+load_dotenv()
+
+DB_URL = str(os.getenv("POSTGRES_URL"))
 
 engine = create_engine(DB_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

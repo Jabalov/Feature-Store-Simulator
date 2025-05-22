@@ -7,4 +7,4 @@ def write_features_to_redis(entity_id: str, features: Dict[str, any]):
         key = f"{entity_id}:{feature_name}"
         redis_client.set(key, value)
         redis_client.set(f"{key}:timestamp", datetime.utcnow().isoformat())
-        print(f"[✓] Redis Updated → {key} = {value}")
+        print(f"Redis Updated → {key} = {value}")
