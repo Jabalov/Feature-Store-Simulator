@@ -13,6 +13,7 @@ from feature_sync.sync_to_redis import sync_all_features
 from fastapi.responses import Response
 from feature_retrieval.config import OFFLINE_STORE_BASE
 from feature_sync.sync_to_redis import sync_all_features
+from feature_retrieval.config import redis_client
 
 import os
 from datetime import datetime
@@ -34,6 +35,25 @@ def create_feature(f: schemas.FeatureCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_f)
     return db_f
+
+@router.get("/metrics")
+def metrics():
+    import prometheus_client
+    from prometheus_client import Gauge
+
+    freshness_gauge = Gauge("feature_freshness_seconds", "Freshness by feature", ["entity_id", "feature_name"])
+    now = datetime.utcnow()
+
+    keys = redis_client.keys("*:*:timestamp")
+    for ts_key in keys:
+        entity_id, feature = ts_key.split(":")[:2]
+        ts_value = redis_client.get(ts_key)
+        if ts_value:
+            freshness = (now - datetime.fromisoformat(ts_value)).total_seconds()
+            freshness_gauge.labels(entity_id=entity_id, feature_name=feature).set(freshness)
+
+    return Response(prometheus_client.generate_latest(), media_type=prometheus_client.CONTENT_TYPE_LATEST)
+
 
 @router.get("/{id}", response_model=schemas.FeatureResponse)
 def get_feature(id: int, db: Session = Depends(get_db)):
@@ -80,23 +100,6 @@ def sync_features_to_redis(date: str = None):
         "status": "success"
     }
 
-@router.get("/metrics")
-def metrics():
-    import prometheus_client
-    from prometheus_client import Gauge
-
-    freshness_gauge = Gauge("feature_freshness_seconds", "Freshness by feature", ["entity_id", "feature_name"])
-    now = datetime.utcnow()
-
-    keys = redis_client.keys("*:*:timestamp")
-    for ts_key in keys:
-        entity_id, feature = ts_key.split(":")[:2]
-        ts_value = redis_client.get(ts_key)
-        if ts_value:
-            freshness = (now - datetime.fromisoformat(ts_value)).total_seconds()
-            freshness_gauge.labels(entity_id=entity_id, feature_name=feature).set(freshness)
-
-    return Response(prometheus_client.generate_latest(), media_type=prometheus_client.CONTENT_TYPE_LATEST)
 
 
 @router.get("/metrics/offline")
