@@ -17,6 +17,9 @@ def get_available_features(base_path):
 
 def sync_parquet_to_redis(feature_name: str, date: str):
     path = os.path.join(OFFLINE_STORE_BASE, feature_name, f"date={date}")
+    if not os.path.exists(path):
+        print(f"[WARNING] Path does not exist: {path}")
+        return
     try:
         df = spark.read.parquet(path)
         for row in df.collect():
